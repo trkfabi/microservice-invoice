@@ -1,5 +1,5 @@
 import request from "supertest";
-import app from "../app.js";
+import app from "../app";
 
 //import { QueueProcessor } from "../queues/processor.queue";
 

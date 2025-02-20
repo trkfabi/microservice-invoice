@@ -1,7 +1,7 @@
 import { RegFactuSistemaFacturacion } from "../generated/sistemafacturacion/definitions/RegFactuSistemaFacturacion";
 import { createClientAsync } from "../generated/sistemafacturacion/client.js";
 import { ClientSSLSecurityPFX } from "soap";
-import { config } from "../config.js";
+import { config } from "../config/config.js";
 import fs from "fs";
 import xmlFormat from "xml-formatter";
 import path from "path";

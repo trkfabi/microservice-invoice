@@ -1,5 +1,5 @@
 import Bull from "bull";
-import { config } from "../config.js";
+import { config } from "../config/config.js";
 import { sendRecordToAEAT } from "../services/invoice.service.js";
 import { InvoiceQueueItem } from "../types/enums.js";
 
@@ -20,7 +20,7 @@ export class QueueProcessor {
 
   // Agrega un ítem a la cola
   public static async addToQueue(item: InvoiceQueueItem) {
-    console.log("[processor.queue] Added to queue:", item);
+    console.log("[processor.queue] Added to queue");
     await this.queue.add(item, { removeOnComplete: true });
   }
 

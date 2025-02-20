@@ -1,6 +1,6 @@
-import "../env-loader.js";
+import "../config/env-loader.js";
 
-import { config } from "../config.js";
+import { config } from "../config/config.js";
 import { QueueProcessor } from "./processor.queue.js";
 
 // Inicializa el procesamiento

@@ -1,6 +1,6 @@
 import path from "path";
-import { IndicadorSN, Version } from "./types/enums.js";
-import { SistemaInformatico } from "./generated/sistemafacturacion";
+import { IndicadorSN, Version } from "../types/enums.js";
+import { SistemaInformatico } from "../generated/sistemafacturacion/index.js";
 
 export const config = {
   port: process.env.PORT || 3000,
