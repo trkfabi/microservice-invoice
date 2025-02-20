@@ -1,0 +1,13 @@
+{
+    "apps": [
+        {
+            "name": "invoice-development",
+            "script": "./app.js",
+            "watch": true,
+            "env_staging": {
+                "NODE_ENV": "development",
+                "PORT": 3000
+            }
+        }
+    ]
+}
