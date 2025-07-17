@@ -6,6 +6,7 @@ import {
   RegistroAlta,
   SistemaInformatico,
   DetalleDesglose,
+  RegistroAnulacion,
 } from "../generated/sistemafacturacion";
 import {
   CalificacionOperacion,
@@ -42,11 +43,16 @@ class InvoiceController {
         }
       );
 
+      // Crea el registro en la base de datos
+      // simulamos que se crea el registro en la base de datos
+      const invoiceRecordUUID = generateUUID();
+
       //test - datos de la base de datos tabla empresa emisor
       const nifEmisor = "B70847835";
       const nombreEmisor = "THE LOOP CLOSET SL";
 
       const registroAlta: RegistroAlta = {
+        RefExterna: invoiceRecordUUID,
         IDVersion: Version.V1_0,
         IDFactura: {
           IDEmisorFactura: nifEmisor,
@@ -82,10 +88,6 @@ class InvoiceController {
       console.log("registroAlta: ", registroAlta);
 
       registroAlta.Huella = generateSHA256(registroAlta, "alta");
-
-      // Crea el registro en la base de datos
-      // simulamos que se crea el registro en la base de datos
-      const invoiceRecordUUID = generateUUID();
 
       // agrega a la queue de procesamiento de AEAT
       QueueProcessor.addToQueue({
@@ -132,14 +134,74 @@ class InvoiceController {
     try {
       const { payload } = req.body;
 
-      console.log("cancelInvoiceHandler Payload:", payload);
+      console.log("cancelInvoiceHandler payload:", payload);
+
+      const sistemaInformatico: SistemaInformatico = SISTEMA_INFORMATICO;
+
+      const lineasDetalle: DetalleDesglose[] = payload.lineas.map(
+        (linea: any) => {
+          return {
+            Impuesto: TipoImpuesto.IVA,
+            CalificacionOperacion: CalificacionOperacion.SUJETA_NO_EXENTA,
+            BaseImponibleOimporteNoSujeto: linea.base_imponible,
+            CuotaRepercutida: linea.cuota_repercutida,
+            TipoImpositivo: linea.tipo_impositivo,
+          };
+        }
+      );
+
+      //test - datos de la base de datos tabla empresa emisor
+      const nifEmisor = "B70847835";
+      const nombreEmisor = "THE LOOP CLOSET SL";
+
+      // Crea el registro en la base de datos
+      // simulamos que se crea el registro en la base de datos
+      const invoiceRecordUUID = generateUUID();
+
+      const registroAnulacion: RegistroAnulacion = {
+        RefExterna: invoiceRecordUUID,
+        IDVersion: Version.V1_0,
+        IDFactura: {
+          IDEmisorFacturaAnulada: nifEmisor,
+          NumSerieFacturaAnulada: `${payload.serie}${payload.numero}`,
+          FechaExpedicionFacturaAnulada: getFormattedDate(
+            payload.fecha_expedicion
+          ),
+        },
+        Encadenamiento: {
+          RegistroAnterior: {
+            IDEmisorFactura: "",
+            NumSerieFactura: "",
+            FechaExpedicionFactura: "",
+            Huella: "",
+          },
+        },
+        SistemaInformatico: sistemaInformatico,
+        FechaHoraHusoGenRegistro: getFormattedDateTime(),
+        TipoHuella: TipoHuella.SHA_256,
+      };
+      console.log("registroAnulacion: ", registroAnulacion);
+
+      registroAnulacion.Huella = generateSHA256(registroAnulacion, "anulacion");
+
+      // agrega a la queue de procesamiento de AEAT
+      QueueProcessor.addToQueue({
+        payload: {
+          registroAnulacion: registroAnulacion,
+        },
+        uuid: invoiceRecordUUID,
+      });
 
       res.status(200).json({
         success: true,
         message: "",
-        results: {},
+        results: {
+          uuid: invoiceRecordUUID,
+          estado: EstadoEnvioAEAT.PENDIENTE,
+        },
       });
     } catch (error) {
+      //console.error(error);
       res.status(500).json({
         success: false,
         message: "Internal Server Error",

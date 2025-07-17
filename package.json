@@ -12,6 +12,7 @@
     "start:queue:prod": "nodemon --watch src -e ts --exec 'NODE_ENV=production node --trace-warnings --loader ts-node/esm --experimental-specifier-resolution=node -r tsconfig-paths/register src/queues/worker.queue.ts'"
   },
   "dependencies": {
+    "@prisma/client": "^6.4.1",
     "@types/swagger-jsdoc": "^6.0.4",
     "@types/swagger-ui-express": "^4.1.7",
     "body-parser": "^1.20.3",
@@ -50,6 +51,7 @@
     "babel-jest": "^29.7.0",
     "jest": "^29.7.0",
     "nodemon": "^2.0.18",
+    "prisma": "^6.4.1",
     "supertest": "^7.0.0",
     "ts-jest": "^29.2.5",
     "ts-node": "^10.9.2",

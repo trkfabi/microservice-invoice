@@ -1,7 +1,7 @@
 import Bull from "bull";
 import { config } from "../config/config.js";
 import { sendRecordToAEAT } from "../services/invoice.service.js";
-import { InvoiceQueueItem } from "../types/enums.js";
+import { InvoiceQueueItem } from "../types/interfaces.js";
 
 export class QueueProcessor {
   private static queue = new Bull(config.queueName, {
@@ -17,6 +17,13 @@ export class QueueProcessor {
   private static maxBatchSize: number = config.maxBatchSize; // Máximo de 1000 elementos por batch
   private static delay: number = config.delay; // Retraso de procesamiento (en milisegundos)
   private static processing: boolean = false;
+  private static interval: any;
+
+  public static updateDelay(time: number) {
+    this.delay = time;
+    clearInterval(this.interval);
+    this.startProcessing();
+  }
 
   // Agrega un ítem a la cola
   public static async addToQueue(item: InvoiceQueueItem) {
@@ -27,7 +34,7 @@ export class QueueProcessor {
   // Inicializa el procesador
   public static startProcessing() {
     // Inicia un ciclo de procesamiento
-    setInterval(async () => {
+    this.interval = setInterval(async () => {
       console.log("[processor.queue] checking queue", config.queueName);
       if (!this.processing) {
         this.processing = true;
@@ -67,6 +74,11 @@ export class QueueProcessor {
     console.log("Sending batch to AEAT:", batch);
     const result = await sendRecordToAEAT(batch);
     console.log("Result: ", result);
+    if (result.success) {
+      // how to read <sf:TiempoEsperaEnvio>60</sf:TiempoEsperaEnvio> from response and update interval
+      const newInterval: number = result.result?.TiempoEsperaEnvio;
+      this.updateDelay(newInterval);
+    }
     return result;
   }
 }

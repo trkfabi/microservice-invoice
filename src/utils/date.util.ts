@@ -1,14 +1,18 @@
-export function getFormattedDate(_date = new Date()): string {
-  const date = new Date(_date);
-  const day = String(date.getDate()).padStart(2, "0");
-  const month = String(date.getMonth() + 1).padStart(2, "0"); // Los meses empiezan desde 0
-  const year = date.getFullYear();
-  return `${day}-${month}-${year}`;
+export function getFormattedDate(dateString: string): string {
+  const [day, month, year] = dateString.split("-"); // Desestructura el string en día, mes y año
+  // Asegura que el día y mes tengan siempre dos dígitos
+  const formattedDay = day.padStart(2, "0"); // Asegura 2 dígitos para el día
+  const formattedMonth = month.padStart(2, "0"); // Asegura 2 dígitos para el mes
+
+  // Reensambla la fecha en formato YYYY-MM-DD
+  const formattedDate = `${formattedDay}-${formattedMonth}-${year}`;
+
+  return formattedDate;
 }
 
-export function getFormattedDateTime(_date = new Date()): string {
+export function getFormattedDateTime(): string {
   // Construir fecha y hora local
-  const date = new Date(_date);
+  const date = new Date();
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, "0");
   const day = String(date.getDate()).padStart(2, "0");

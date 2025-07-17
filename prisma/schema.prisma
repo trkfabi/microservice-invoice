@@ -1,0 +1,184 @@
+
+generator client {
+  provider = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-arm64-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Role {
+  id         Int       @id @default(autoincrement())
+  name       String    @unique
+  description String?  @default("")
+  users      User[]
+}
+
+model SubscriptionPlan {
+  id          Int       @id @default(autoincrement())
+  name        String    @unique
+  description String?
+  price       Float     // Precio del plan
+  features    Json      // Configuración específica del plan
+  users       User[]
+}
+
+model User {
+  id                Int      @id @default(autoincrement())
+  email             String   @unique
+  password          String
+  firstName         String
+  lastName          String
+  birthDate         DateTime?
+
+  roleId            Int                @default(1) // Por defecto, el rol será "ADMIN"
+  role              Role               @relation(fields: [roleId], references: [id])
+
+  subscriptionPlanId Int?
+  subscriptionPlan  SubscriptionPlan? @relation(fields: [subscriptionPlanId], references: [id])
+
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  companies         Company[] @relation("CompanyOwner")
+}
+
+model Company {
+  id        Int      @id @default(autoincrement())
+  name      String
+  nif       String   @unique // NIF para identificación fiscal
+  owner     User     @relation(fields: [ownerId], references: [id], name: "CompanyOwner")
+  ownerId   Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  invoices  Invoice[]
+  records   Record[]
+}
+
+model Invoice {
+  id                      Int        @id @default(autoincrement())
+  serie                   String
+  number                  String
+  emitterNif              String
+  emitterName             String     // Nombre del emisor de la factura
+  issueDate               DateTime
+  totalAmount             Decimal    
+  totalTax                Decimal    
+  qrImage                 String?    // Almacena la imagen del QR
+  qrUrl                   String?    // URL del QR
+  request                 Json
+  status                  String     // Correcta, aceptada con errores, incorrecta, anulada
+  rectification           String     // S o N
+  previousRejection       String     // N, S, X
+  invoiceType             String     // F1, F2, R1, R2, etc.
+  description             String?
+  hash                    String
+  lastModified            DateTime   @updatedAt
+  chain                   Json?      // Encadenamiento (nif emisor anterior, serie, número, etc.)
+  clientNif               String?
+  clientIdOther           Json?      // {codigo_pais, id_type, id}
+  clientName              String?
+  rectificationType       String?    // S o I
+  rectificationAmount     Json?      // {base_rectificada, cuota_rectificada, cuota_recargo_recificada}
+  correctedInvoices       Json?      // [{serie, numero, fecha_expedicion}]
+  replacedInvoices        Json?      // [{serie, numero, fecha_expedicion}]
+  specialData             Json?      // {cupon, factura_simplificada_art_7273, etc.}
+  companyId               Int
+  company                 Company    @relation(fields: [companyId], references: [id])
+  invoiceLines            InvoiceLine[]
+  records                 Record[]
+
+  @@index([issueDate])
+  @@index([serie, number, status])
+}
+
+model InvoiceLine {
+  id                      Int      @id @default(autoincrement())
+  baseAmount              Decimal  
+  taxRate                 Int      // 0, 2, 4, etc.
+  taxCode                 String   // 01, 02, 03, etc.
+  operationClassification String   // S1, S2, etc.
+  regimeCode              String   // 01, 02, etc.
+  exemptOperation         String   // E1, E2, etc.
+  costBaseAmount          Decimal?
+  equivalenceSurchargeRate Decimal? 
+  equivalenceSurchargeAmount Decimal? 
+  invoiceId               Int
+  invoice                 Invoice  @relation(fields: [invoiceId], references: [id])
+}
+
+model Record {
+  id                      Int      @id @default(autoincrement())
+  uuid                    String   @unique
+  nif                     String
+  serie                   String
+  number                  String
+  issueDate               DateTime
+  operationType           String   // Alta, Subsanacion, etc.
+  status                  String   // Pendiente, Correcto, etc.
+  qrImage                 String?
+  qrUrl                   String?
+  hash                    String
+  companyId               Int
+  company                 Company  @relation(fields: [companyId], references: [id])
+  invoiceId               Int
+  invoice                 Invoice  @relation(fields: [invoiceId], references: [id])
+
+  @@index([uuid])
+  @@index([issueDate])
+  @@index([serie, number, operationType, status])
+}
+
+model ErroresAEAT {
+  id          Int      @id @default(autoincrement())
+  codigo      Int      @unique
+  descripcion String
+  tipo        String   // Rechazo completo, Rechazo parcial, Aceptado con error
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model SistemaInformatico {
+  id                        Int   @id @default(autoincrement())
+  nombreRazon               String
+  nif                       String
+  idOtro                    Json?    // Campo opcional que almacena un JSON
+  nombreSistemaInformatico  String?
+  idSistemaInformatico      String @unique
+  version                   String
+  numeroInstalacion         String
+  tipoUsoPosibleSoloVerifactu String? // Para almacenar los valores posibles 'N' o 'S'
+  tipoUsoPosibleMultiOT     String?   // Para almacenar los valores posibles 'N' o 'S'
+  indicadorMultiplesOT      String?   // Para almacenar los valores posibles 'N' o 'S'
+}
+
+
+// model Evento {
+//   id                     Int                  @id @default(autoincrement())
+//   SistemaInformaticoId    String               // FK to SistemaInformatico
+//   ObligadoEmisionId       String               // FK to ObligadoEmision
+//   EmitidoPorTerceroODestinatarioId String?       // FK to TipoGenerador
+//   TerceroODestinatarioId  String?              // FK to Tercero
+//   FechaHoraHusoGenEvento  DateTime
+//   TipoEventoId            String               // FK to TipoEvento
+//   DatosPropiosEventoId    String?              // FK to DatosPropiosEvento
+//   OtrosDatosDelEvento     String?              // optional field
+//   EncadenamientoPrimerEvento IndicadorSN?      // Optional field for first event
+//   EventoAnteriorTipoEvento String               // FK to TipoEvento
+//   EventoAnteriorFechaHoraHusoGenEvento DateTime  // for linking previous event
+//   EventoAnteriorHuellaEvento String             // for linking previous event
+//   TipoHuella              TipoHuella
+//   HuellaEvento            String
+//   Signature              String?              // optional signature
+
+//   // Relations
+//   SistemaInformatico      SistemaInformatico   @relation(fields: [SistemaInformaticoId], references: [idSistemaInformatico])
+//   ObligadoEmision         ObligadoEmision      @relation(fields: [ObligadoEmisionId], references: [id])
+//   EmitidoPorTerceroODestinatario TipoGenerador? @relation(fields: [EmitidoPorTerceroODestinatarioId], references: [id])
+//   TerceroODestinatario    Tercero?             @relation(fields: [TerceroODestinatarioId], references: [id])
+//   TipoEvento              TipoEvento           @relation(fields: [TipoEventoId], references: [id])
+//   DatosPropiosEvento      DatosPropiosEvento?  @relation(fields: [DatosPropiosEventoId], references: [id])
+// }

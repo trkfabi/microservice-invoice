@@ -10,7 +10,7 @@ import {
   RegistroAlta,
   RegistroAnulacion,
 } from "../generated/sistemafacturacion";
-import { InvoiceQueueItem } from "../types/enums.js";
+import { InvoiceQueueItem, commonResponseJson } from "../types/interfaces";
 
 export const sendRecordToAEAT = async (batch: InvoiceQueueItem[]) => {
   const CERT_PATH = config.certificatePath || "certificate.p12";
@@ -49,7 +49,7 @@ export const sendRecordToAEAT = async (batch: InvoiceQueueItem[]) => {
   // FOR TESTING WE WILL EXIT HERE w/o CALLING SOAP service
   console.log("aeat service payloadSF", payloadSF);
 
-  return {
+  return <commonResponseJson>{
     success: true,
     message: "Sent to AEAT",
     result: {},
@@ -110,11 +110,27 @@ export const sendRecordToAEAT = async (batch: InvoiceQueueItem[]) => {
           faultString: fault.faultstring,
         };
         console.log("Fault detected:", faultDetails);
+
+        return <commonResponseJson>{
+          success: false,
+          message: `${fault.faultcode} - ${fault.faultstring}`,
+          result: faultDetails,
+        };
       } else {
         console.log("Response received:", result);
+        return <commonResponseJson>{
+          success: true,
+          message: "",
+          result: result,
+        };
       }
     } catch (error) {
       console.error("Error parsing response XML:");
+      return <commonResponseJson>{
+        success: false,
+        message: "Error parsing response XML",
+        result: error,
+      };
     } finally {
       const outputDir = path.resolve("./testfiles");
       if (!fs.existsSync(outputDir)) {
